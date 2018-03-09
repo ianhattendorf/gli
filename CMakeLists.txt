@@ -71,8 +71,9 @@ endmacro(addExternalPackageGTC)
 ################################
 # Add GLM 
 
-set(GLM_DIRECTORY glm)
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/external/${GLM_DIRECTORY})
+# glm find_package fails on non 64-bit
+find_path(glm_INCLUDE_DIRS glm/glm.hpp)
+include_directories(${glm_INCLUDE_DIRS})
 
 ################################
 # Add subdirectory
