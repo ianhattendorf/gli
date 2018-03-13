@@ -1,5 +1,6 @@
 #include "../gl.hpp"
 #include "file.hpp"
+#include "byteswap.hpp"
 #include <cstdio>
 #include <cassert>
 
@@ -25,6 +26,29 @@ namespace detail
 		std::uint32_t NumberOfMipmapLevels;
 		std::uint32_t BytesOfKeyValueData;
 	};
+	
+	inline ktx_header10 endian_swap(ktx_header10 const& Header)
+	{
+		if (Header.Endianness == 0x04030201)
+		{
+			return Header;
+		}
+		return {
+				byteswap(Header.Endianness),
+				byteswap(Header.GLType),
+				byteswap(Header.GLTypeSize),
+				byteswap(Header.GLFormat),
+				byteswap(Header.GLInternalFormat),
+				byteswap(Header.GLBaseInternalFormat),
+				byteswap(Header.PixelWidth),
+				byteswap(Header.PixelHeight),
+				byteswap(Header.PixelDepth),
+				byteswap(Header.NumberOfArrayElements),
+				byteswap(Header.NumberOfFaces),
+				byteswap(Header.NumberOfMipmapLevels),
+				byteswap(Header.BytesOfKeyValueData)
+		};
+	}
 
 	inline target get_target(ktx_header10 const& Header)
 	{
@@ -52,7 +76,7 @@ namespace detail
 
 	inline texture load_ktx10(char const* Data, std::size_t Size)
 	{
-		detail::ktx_header10 const & Header(*reinterpret_cast<detail::ktx_header10 const*>(Data));
+		detail::ktx_header10 const & Header = endian_swap(*reinterpret_cast<detail::ktx_header10 const*>(Data));
 
 		size_t Offset = sizeof(detail::ktx_header10);
 

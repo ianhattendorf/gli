@@ -1,5 +1,6 @@
 #include "../dx.hpp"
 #include "file.hpp"
+#include "byteswap.hpp"
 #include <cstdio>
 #include <cassert>
 
@@ -68,6 +69,45 @@ namespace detail
 		std::uint32_t CubemapFlags;
 		std::uint32_t Reserved2[3];
 	};
+	
+	inline dds_header endian_swap(dds_header const& Header)
+	{
+		if (Header.Size == 124)
+		{
+			return Header;
+		}
+
+		const dds_pixel_format swapped_format{
+				byteswap(Header.Format.size),
+				byteswap(Header.Format.flags),
+				byteswap(Header.Format.fourCC),
+				byteswap(Header.Format.bpp),
+				{
+						byteswap(Header.Format.Mask.x),
+						byteswap(Header.Format.Mask.y),
+						byteswap(Header.Format.Mask.z),
+						byteswap(Header.Format.Mask.w),
+				}
+		};
+
+		dds_header swapped_header{};
+		swapped_header.Size = byteswap(Header.Size);
+		swapped_header.Flags = byteswap(Header.Flags);
+		swapped_header.Height = byteswap(Header.Height);
+		swapped_header.Width = byteswap(Header.Width);
+		swapped_header.Pitch = byteswap(Header.Pitch);
+		swapped_header.Depth = byteswap(Header.Depth);
+		swapped_header.MipMapLevels = byteswap(Header.MipMapLevels);
+		// Should this be swapped?
+		memcpy(swapped_header.Reserved1, Header.Reserved1, sizeof(Header.Reserved1));
+		swapped_header.Format = swapped_format;
+		swapped_header.SurfaceFlags = byteswap(Header.SurfaceFlags);
+		swapped_header.CubemapFlags = byteswap(Header.CubemapFlags);
+		// Should this be swapped?
+		memcpy(swapped_header.Reserved2, Header.Reserved2, sizeof(Header.Reserved2));
+
+		return swapped_header;
+	}
 
 	static_assert(sizeof(dds_header) == 124, "DDS Header size mismatch");
 
@@ -114,6 +154,25 @@ namespace detail
 		std::uint32_t				ArraySize;
 		dds_alpha_mode				AlphaFlags; // Should be 0 whenever possible to avoid D3D utility library to fail
 	};
+
+	inline dds_header10 endian_swap(dds_header10 const& Header10)
+	{
+		// Check if header resource dimension is valid, if so assume correct endianness
+		if (Header10.ResourceDimension <= D3D10_RESOURCE_DIMENSION_TEXTURE3D ||
+				Header10.ResourceDimension >= D3D10_RESOURCE_DIMENSION_UNKNOWN)
+		{
+			return Header10;
+		}
+
+		dds_header10 swapped_header10{};
+		swapped_header10.Format.DDS = byteswap(Header10.Format.DDS);
+		swapped_header10.ResourceDimension = byteswap(Header10.ResourceDimension);
+		swapped_header10.MiscFlag = byteswap(Header10.MiscFlag);
+		swapped_header10.ArraySize = byteswap(Header10.ArraySize);
+		swapped_header10.AlphaFlags = byteswap(Header10.AlphaFlags);
+
+		return swapped_header10;
+	}
 
 	static_assert(sizeof(dds_header10) == 20, "DDS DX10 Extended Header size mismatch");
 
@@ -170,17 +229,19 @@ namespace detail
 
 		GLI_ASSERT(Size >= sizeof(detail::dds_header));
 
-		detail::dds_header const & Header(*reinterpret_cast<detail::dds_header const *>(Data + Offset));
+		detail::dds_header const & Header = endian_swap(*reinterpret_cast<detail::dds_header const *>(Data + Offset));
 		Offset += sizeof(detail::dds_header);
 
 		detail::dds_header10 Header10;
 		if((Header.Format.flags & dx::DDPF_FOURCC) && (Header.Format.fourCC == dx::D3DFMT_DX10 || Header.Format.fourCC == dx::D3DFMT_GLI1))
 		{
 			std::memcpy(&Header10, Data + Offset, sizeof(Header10));
+			Header10 = endian_swap(Header10);
 			Offset += sizeof(detail::dds_header10);
 		}
 
 		dx DX;
+		const auto a = DX.translate(FORMAT_R8_UNORM_PACK8).Mask;
 
 		gli::format Format(static_cast<gli::format>(gli::FORMAT_INVALID));
 		if((Header.Format.flags & (dx::DDPF_RGB | dx::DDPF_ALPHAPIXELS | dx::DDPF_ALPHA | dx::DDPF_YUV | dx::DDPF_LUMINANCE)) && Format == static_cast<format>(gli::FORMAT_INVALID) && Header.Format.bpp != 0)
