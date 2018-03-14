@@ -72,6 +72,7 @@ namespace detail
 	
 	inline dds_header endian_swap(dds_header const& Header)
 	{
+		// Is there a better way to detect if we need to swap?
 		if (Header.Size == 124)
 		{
 			return Header;
@@ -158,8 +159,8 @@ namespace detail
 	inline dds_header10 endian_swap(dds_header10 const& Header10)
 	{
 		// Check if header resource dimension is valid, if so assume correct endianness
-		if (Header10.ResourceDimension <= D3D10_RESOURCE_DIMENSION_TEXTURE3D ||
-				Header10.ResourceDimension >= D3D10_RESOURCE_DIMENSION_UNKNOWN)
+		if (Header10.ResourceDimension >= D3D10_RESOURCE_DIMENSION_UNKNOWN &&
+				Header10.ResourceDimension <= D3D10_RESOURCE_DIMENSION_TEXTURE3D )
 		{
 			return Header10;
 		}
@@ -241,7 +242,6 @@ namespace detail
 		}
 
 		dx DX;
-		const auto a = DX.translate(FORMAT_R8_UNORM_PACK8).Mask;
 
 		gli::format Format(static_cast<gli::format>(gli::FORMAT_INVALID));
 		if((Header.Format.flags & (dx::DDPF_RGB | dx::DDPF_ALPHAPIXELS | dx::DDPF_ALPHA | dx::DDPF_YUV | dx::DDPF_LUMINANCE)) && Format == static_cast<format>(gli::FORMAT_INVALID) && Header.Format.bpp != 0)
