@@ -72,7 +72,13 @@ namespace detail
 		std::uint32_t CubemapFlags;
 		std::uint32_t Reserved2[3];
 	};
-	
+
+	/**
+	 * Swap endianness of the provided dds_header struct if needed
+	 * @param Header The struct to swap endianness
+	 * @param HeaderNeedsEndianSwap Whether to swap endianness or not
+	 * @return The original struct if no swap is needed, otherwise the swapped struct
+	 */
 	inline dds_header endian_swap(dds_header const& Header, bool const HeaderNeedsEndianSwap)
 	{
 		if (!HeaderNeedsEndianSwap)
@@ -80,36 +86,31 @@ namespace detail
 			return Header;
 		}
 
-		const dds_pixel_format swapped_format{
-				byteswap(Header.Format.size),
-				byteswap(Header.Format.flags),
-				byteswap(Header.Format.fourCC),
-				byteswap(Header.Format.bpp),
+		return {
+				byteswap(Header.Size),
+				byteswap(Header.Flags),
+				byteswap(Header.Height),
+				byteswap(Header.Width),
+				byteswap(Header.Pitch),
+				byteswap(Header.Depth),
+				byteswap(Header.MipMapLevels),
+				{0},
 				{
-						byteswap(Header.Format.Mask.x),
-						byteswap(Header.Format.Mask.y),
-						byteswap(Header.Format.Mask.z),
-						byteswap(Header.Format.Mask.w),
-				}
+						byteswap(Header.Format.size),
+						byteswap(Header.Format.flags),
+						byteswap(Header.Format.fourCC),
+						byteswap(Header.Format.bpp),
+						{
+								byteswap(Header.Format.Mask.x),
+								byteswap(Header.Format.Mask.y),
+								byteswap(Header.Format.Mask.z),
+								byteswap(Header.Format.Mask.w),
+						}
+				},
+				byteswap(Header.SurfaceFlags),
+				byteswap(Header.CubemapFlags),
+				{0}
 		};
-
-		dds_header swapped_header{};
-		swapped_header.Size = byteswap(Header.Size);
-		swapped_header.Flags = byteswap(Header.Flags);
-		swapped_header.Height = byteswap(Header.Height);
-		swapped_header.Width = byteswap(Header.Width);
-		swapped_header.Pitch = byteswap(Header.Pitch);
-		swapped_header.Depth = byteswap(Header.Depth);
-		swapped_header.MipMapLevels = byteswap(Header.MipMapLevels);
-		// Should this be swapped?
-		memcpy(swapped_header.Reserved1, Header.Reserved1, sizeof(Header.Reserved1));
-		swapped_header.Format = swapped_format;
-		swapped_header.SurfaceFlags = byteswap(Header.SurfaceFlags);
-		swapped_header.CubemapFlags = byteswap(Header.CubemapFlags);
-		// Should this be swapped?
-		memcpy(swapped_header.Reserved2, Header.Reserved2, sizeof(Header.Reserved2));
-
-		return swapped_header;
 	}
 
 	static_assert(sizeof(dds_header) == 124, "DDS Header size mismatch");
@@ -158,6 +159,12 @@ namespace detail
 		dds_alpha_mode				AlphaFlags; // Should be 0 whenever possible to avoid D3D utility library to fail
 	};
 
+	/**
+	 * Swap endianness of the provided dds_header10 struct if needed
+	 * @param Header10 The struct to swap endianness
+	 * @param HeaderNeedsEndianSwap Whether to swap endianness or not
+	 * @return The original struct if no swap is needed, otherwise the swapped struct
+	 */
 	inline dds_header10 endian_swap(dds_header10 const& Header10, bool const HeaderNeedsEndianSwap)
 	{
 		if (!HeaderNeedsEndianSwap)

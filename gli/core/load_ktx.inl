@@ -9,6 +9,7 @@ namespace detail
 {
 	static unsigned char const FOURCC_KTX10[] = {0xAB, 0x4B, 0x54, 0x58, 0x20, 0x31, 0x31, 0xBB, 0x0D, 0x0A, 0x1A, 0x0A};
 	static unsigned char const FOURCC_KTX20[] = {0xAB, 0x4B, 0x54, 0x58, 0x20, 0x32, 0x30, 0xBB, 0x0D, 0x0A, 0x1A, 0x0A};
+	static uint32_t const FOURCC_KTX_CURRENT_ENDIAN = 0x04030201;
 
 	struct ktx_header10
 	{
@@ -26,10 +27,15 @@ namespace detail
 		std::uint32_t NumberOfMipmapLevels;
 		std::uint32_t BytesOfKeyValueData;
 	};
-	
+
+	/**
+	 * Swap endianness of the provided ktx_header10 struct if needed
+	 * @param Header The struct to swap endianness
+	 * @return The original struct if no swap is needed, otherwise the swapped struct
+	 */
 	inline ktx_header10 endian_swap(ktx_header10 const& Header)
 	{
-		if (Header.Endianness == 0x04030201)
+		if (Header.Endianness == FOURCC_KTX_CURRENT_ENDIAN)
 		{
 			return Header;
 		}
@@ -76,7 +82,7 @@ namespace detail
 
 	inline texture load_ktx10(char const* Data, std::size_t Size)
 	{
-		detail::ktx_header10 const & Header = endian_swap(*reinterpret_cast<detail::ktx_header10 const*>(Data));
+		detail::ktx_header10 const Header = endian_swap(*reinterpret_cast<detail::ktx_header10 const*>(Data));
 
 		size_t Offset = sizeof(detail::ktx_header10);
 
