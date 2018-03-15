@@ -54,7 +54,11 @@ namespace detail
 
 		Memory.resize(Texture.size() + sizeof(detail::FOURCC_DDS) + sizeof(detail::dds_header) + (RequireDX10Header ? sizeof(detail::dds_header10) : 0));
 
-		memcpy(&Memory[0], detail::FOURCC_DDS, sizeof(detail::FOURCC_DDS));
+		// DDS files are always stored in little endian byte order.
+		uint32_t const MagicWordLittleEndian = detail::is_big_endian()
+												? detail::FOURCC_SSD
+												: detail::FOURCC_DDS;
+		memcpy(&Memory[0], &MagicWordLittleEndian, sizeof(detail::FOURCC_DDS));
 		std::size_t Offset = sizeof(detail::FOURCC_DDS);
 
 		detail::dds_header& Header = *reinterpret_cast<detail::dds_header*>(&Memory[0] + Offset);
@@ -107,8 +111,10 @@ namespace detail
 			Header10.MiscFlag = 0;//Storage.levels() > 0 ? detail::D3D10_RESOURCE_MISC_GENERATE_MIPS : 0;
 			Header10.Format = DXFormat.DXGIFormat;
 			Header10.AlphaFlags = detail::DDS_ALPHA_MODE_UNKNOWN;
+			Header10 = endian_swap(Header10, detail::is_big_endian());
 		}
 
+		Header = endian_swap(Header, detail::is_big_endian());
 		std::memcpy(&Memory[0] + Offset, Texture.data(), Texture.size());
 
 		return true;

@@ -37,5 +37,11 @@ namespace gli{
 			return ByteswapImpl<T, sizeof(T)>()(x);
 		}
 
+		bool is_big_endian()
+		{
+			uint32_t const num = 0x1;
+			return *reinterpret_cast<uint8_t const *>(&num) != 0x1;
+		}
+
 	}//namespace detail
 }//namespace gli

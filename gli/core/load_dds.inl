@@ -7,7 +7,10 @@
 namespace gli{
 namespace detail
 {
-	static char const FOURCC_DDS[] = {'D', 'D', 'S', ' '};
+	// Magic number
+	static uint32_t const FOURCC_DDS = GLI_MAKEFOURCC('D', 'D', 'S', ' ');
+	// Byte-swapped magic number
+	static uint32_t const FOURCC_SSD = GLI_MAKEFOURCC(' ', 'S', 'S', 'D');
 
 	enum dds_cubemap_flag
 	{
@@ -70,10 +73,9 @@ namespace detail
 		std::uint32_t Reserved2[3];
 	};
 	
-	inline dds_header endian_swap(dds_header const& Header)
+	inline dds_header endian_swap(dds_header const& Header, bool const HeaderNeedsEndianSwap)
 	{
-		// Is there a better way to detect if we need to swap?
-		if (Header.Size == 124)
+		if (!HeaderNeedsEndianSwap)
 		{
 			return Header;
 		}
@@ -156,8 +158,13 @@ namespace detail
 		dds_alpha_mode				AlphaFlags; // Should be 0 whenever possible to avoid D3D utility library to fail
 	};
 
-	inline dds_header10 endian_swap(dds_header10 const& Header10)
+	inline dds_header10 endian_swap(dds_header10 const& Header10, bool const HeaderNeedsEndianSwap)
 	{
+		if (!HeaderNeedsEndianSwap)
+		{
+			return Header10;
+		}
+
 		// Check if header resource dimension is valid, if so assume correct endianness
 		if (Header10.ResourceDimension >= D3D10_RESOURCE_DIMENSION_UNKNOWN &&
 				Header10.ResourceDimension <= D3D10_RESOURCE_DIMENSION_TEXTURE3D )
@@ -224,20 +231,32 @@ namespace detail
 	{
 		GLI_ASSERT(Data && (Size >= sizeof(detail::FOURCC_DDS)));
 
-		if(strncmp(Data, detail::FOURCC_DDS, 4) != 0)
+		uint32_t const * const MagicWord = reinterpret_cast<uint32_t const *>(Data);
+		bool HeaderNeedsEndianSwap;
+		if(*MagicWord == detail::FOURCC_DDS)
+		{
+			HeaderNeedsEndianSwap = false;
+		}
+		else if(*MagicWord == detail::FOURCC_SSD)
+		{
+			HeaderNeedsEndianSwap = true;
+		}
+		else
+		{
 			return texture();
+		}
 		std::size_t Offset = sizeof(detail::FOURCC_DDS);
 
 		GLI_ASSERT(Size >= sizeof(detail::dds_header));
 
-		detail::dds_header const & Header = endian_swap(*reinterpret_cast<detail::dds_header const *>(Data + Offset));
+		detail::dds_header const & Header = endian_swap(*reinterpret_cast<detail::dds_header const *>(Data + Offset), HeaderNeedsEndianSwap);
 		Offset += sizeof(detail::dds_header);
 
 		detail::dds_header10 Header10;
 		if((Header.Format.flags & dx::DDPF_FOURCC) && (Header.Format.fourCC == dx::D3DFMT_DX10 || Header.Format.fourCC == dx::D3DFMT_GLI1))
 		{
 			std::memcpy(&Header10, Data + Offset, sizeof(Header10));
-			Header10 = endian_swap(Header10);
+			Header10 = endian_swap(Header10, HeaderNeedsEndianSwap);
 			Offset += sizeof(detail::dds_header10);
 		}
 
