@@ -10,7 +10,7 @@ namespace detail
 	// Magic number
 	static uint32_t const FOURCC_DDS = GLI_MAKEFOURCC('D', 'D', 'S', ' ');
 	// Byte-swapped magic number
-	static uint32_t const FOURCC_SSD = GLI_MAKEFOURCC(' ', 'S', 'S', 'D');
+	static uint32_t const FOURCC_SDD = byteswap(FOURCC_DDS);
 
 	enum dds_cubemap_flag
 	{
@@ -165,13 +165,6 @@ namespace detail
 			return Header10;
 		}
 
-		// Check if header resource dimension is valid, if so assume correct endianness
-		if (Header10.ResourceDimension >= D3D10_RESOURCE_DIMENSION_UNKNOWN &&
-				Header10.ResourceDimension <= D3D10_RESOURCE_DIMENSION_TEXTURE3D )
-		{
-			return Header10;
-		}
-
 		dds_header10 swapped_header10{};
 		swapped_header10.Format.DDS = byteswap(Header10.Format.DDS);
 		swapped_header10.ResourceDimension = byteswap(Header10.ResourceDimension);
@@ -231,13 +224,18 @@ namespace detail
 	{
 		GLI_ASSERT(Data && (Size >= sizeof(detail::FOURCC_DDS)));
 
+		// Check DDS magic word, "DDS ", as fourCC.
+		// If we're on a big endian platform, it should be " SDD" (read as fourCC)
+		// and we'll need to swap header endianness for both dds_header and dds_header10.
+		// (Are textures ever accessed as anything greater than 1 byte? If so we might need to
+		// byte swap texture data in those cases...)
 		uint32_t const * const MagicWord = reinterpret_cast<uint32_t const *>(Data);
 		bool HeaderNeedsEndianSwap;
 		if(*MagicWord == detail::FOURCC_DDS)
 		{
 			HeaderNeedsEndianSwap = false;
 		}
-		else if(*MagicWord == detail::FOURCC_SSD)
+		else if(*MagicWord == detail::FOURCC_SDD)
 		{
 			HeaderNeedsEndianSwap = true;
 		}
@@ -249,7 +247,7 @@ namespace detail
 
 		GLI_ASSERT(Size >= sizeof(detail::dds_header));
 
-		detail::dds_header const & Header = endian_swap(*reinterpret_cast<detail::dds_header const *>(Data + Offset), HeaderNeedsEndianSwap);
+		detail::dds_header const Header = endian_swap(*reinterpret_cast<detail::dds_header const *>(Data + Offset), HeaderNeedsEndianSwap);
 		Offset += sizeof(detail::dds_header);
 
 		detail::dds_header10 Header10;

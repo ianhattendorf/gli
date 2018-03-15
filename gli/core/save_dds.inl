@@ -56,7 +56,7 @@ namespace detail
 
 		// DDS files are always stored in little endian byte order.
 		uint32_t const MagicWordLittleEndian = detail::is_big_endian()
-												? detail::FOURCC_SSD
+												? detail::FOURCC_SDD
 												: detail::FOURCC_DDS;
 		memcpy(&Memory[0], &MagicWordLittleEndian, sizeof(detail::FOURCC_DDS));
 		std::size_t Offset = sizeof(detail::FOURCC_DDS);
@@ -111,9 +111,13 @@ namespace detail
 			Header10.MiscFlag = 0;//Storage.levels() > 0 ? detail::D3D10_RESOURCE_MISC_GENERATE_MIPS : 0;
 			Header10.Format = DXFormat.DXGIFormat;
 			Header10.AlphaFlags = detail::DDS_ALPHA_MODE_UNKNOWN;
+			// See comment below regarding endianness
 			Header10 = endian_swap(Header10, detail::is_big_endian());
 		}
 
+		// DDS is a little endian format, so we need to byte swap the headers when saving.
+		// (Are textures ever accessed as anything greater than 1 byte? If so we might need to
+		// byte swap texture data in those cases...)
 		Header = endian_swap(Header, detail::is_big_endian());
 		std::memcpy(&Memory[0] + Offset, Texture.data(), Texture.size());
 
