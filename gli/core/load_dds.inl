@@ -361,6 +361,13 @@ namespace detail
 
 		GLI_ASSERT(Format != static_cast<format>(gli::FORMAT_INVALID));
 
+		if (HeaderNeedsEndianSwap)
+		{
+			detail::formatInfo const& FormatInfo = detail::get_format_info(Format);
+			// If BlockSize > 1, we need to change byte order of texture data. Not implemented.
+			GLI_ASSERT(FormatInfo.BlockSize == 1);
+		}
+
 		size_t const MipMapCount = (Header.Flags & detail::DDSD_MIPMAPCOUNT) ? Header.MipMapLevels : 1;
 		size_t FaceCount = 1;
 		if(Header.CubemapFlags & detail::DDSCAPS2_CUBEMAP)

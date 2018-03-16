@@ -39,8 +39,10 @@ namespace detail
 		{
 			return Header;
 		}
-		return {
-				byteswap(Header.Endianness),
+
+		// Keep original endianness, might need to convert texture data
+		ktx_header10 const swapped_header{
+				Header.Endianness,
 				byteswap(Header.GLType),
 				byteswap(Header.GLTypeSize),
 				byteswap(Header.GLFormat),
@@ -54,6 +56,11 @@ namespace detail
 				byteswap(Header.NumberOfMipmapLevels),
 				byteswap(Header.BytesOfKeyValueData)
 		};
+
+		// If GLTypeSize != 1, we need to change byte order of texture data. Not implemented.
+		GLI_ASSERT(swapped_header.GLTypeSize == 1);
+
+		return swapped_header;
 	}
 
 	inline target get_target(ktx_header10 const& Header)
