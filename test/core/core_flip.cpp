@@ -60,23 +60,23 @@ int main()
 
 	Error += test_texture(
 		gli::texture2d(gli::FORMAT_RGB_DXT1_UNORM_BLOCK8, TextureSize, Levels),
-		gli::detail::dxt1_block{63721, 255, 228, 144, 64, 0},
-		gli::detail::dxt1_block{2516, 215, 152, 173, 215, 106});
+		gli::detail::dxt1_block{63721, 255, {228, 144, 64, 0}},
+		gli::detail::dxt1_block{2516, 215, {152, 173, 215, 106}});
 
 	Error += test_texture(
 		gli::texture2d(gli::FORMAT_RGBA_DXT1_UNORM_BLOCK8, TextureSize, Levels),
-		gli::detail::dxt1_block{63721, 255, 228, 144, 64, 0},
-		gli::detail::dxt1_block{2516, 215, 152, 173, 215, 106});
+		gli::detail::dxt1_block{63721, 255, {228, 144, 64, 0}},
+		gli::detail::dxt1_block{2516, 215, {152, 173, 215, 106}});
 
 	Error += test_texture(
 		gli::texture2d(gli::FORMAT_RGBA_DXT3_UNORM_BLOCK16, TextureSize, Levels),
-		gli::detail::dxt3_block{12514, 1512, 12624, 16614, 63712, 255, 228, 144, 64, 0},
-		gli::detail::dxt3_block{36125, 2416, 46314, 10515, 2516, 215, 152, 173, 215, 106});
+		gli::detail::dxt3_block{{12514, 1512, 12624, 16614}, 63712, 255, {228, 144, 64, 0}},
+		gli::detail::dxt3_block{{36125, 2416, 46314, 10515}, 2516, 215, {152, 173, 215, 106}});
 
 	Error += test_texture(
 		gli::texture2d(gli::FORMAT_RGBA_DXT5_UNORM_BLOCK16, TextureSize, Levels),
-		gli::detail::dxt5_block{255, 0, 64, 30, 50, 45, 242, 68, 63712, 255, 228, 144, 64, 0},
-		gli::detail::dxt5_block{0, 255, 62, 144, 228, 214, 59, 200, 2516, 215, 152, 173, 215, 106});
+		gli::detail::dxt5_block{{255, 0}, {64, 30, 50, 45, 242, 68}, 63712, 255, {228, 144, 64, 0}},
+		gli::detail::dxt5_block{{0, 255}, {62, 144, 228, 214, 59, 200}, 2516, 215, {152, 173, 215, 106}});
 
 	return Error;
 }
